@@ -1,0 +1,60 @@
+<html>
+    <head>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+        <!-- Assets for the please-wait library -->
+        <link href="../assets/spin-kit/spin-kit.css" rel="stylesheet">
+        <link href="../assets/please-wait/please-wait.css" rel="stylesheet">
+        <script type="text/javascript" src="../assets/please-wait/please-wait.js"></script>
+
+        <script>
+        // The potentially long-running validation code moved to a callback function
+        // and invoked by a timer
+        async function validatePaymentAmount() {
+            // Fetch the parameters from the query string
+            let qsParams = new URLSearchParams(window.location.search);
+            let priorValue = qsParams.get('priorValue');
+            let newValue = qsParams.get('newValue');
+
+            // Make a web service call
+            let resp = await fetch(`http://localhost:8080/diff?v1=${priorValue}`
+                + `&v2=${newValue}&delay=3000`)
+            let body = await resp.json();
+
+            if (body && body.diff) {
+                // Notify the user
+                let userResp = confirm(`The monthly payment has been modified by $${body.diff}.\n`
+                    + `Press OK to validate this change and then re-save the loan.`);
+
+                // Update the validated amount
+                window.opener.postMessage({ 
+                    type: 'validation_result', 
+                    validatedPayment: userResp ? newValue : priorValue
+                }, "*")
+            }
+
+            // Close the pop-up window
+            window.close();
+        }
+
+        window.addEventListener("load", validatePaymentAmount);
+    </script>
+    </head>
+    <body>
+    <script>
+        // Show the please-wait graphic
+        window.loadingScreen = window.pleaseWait({
+            logo: '../assets/Encompass_Logo.png',
+            loadingHtml: `<center><div class="sk-chase">
+                <div class="sk-chase-dot"></div>
+                <div class="sk-chase-dot"></div>
+                <div class="sk-chase-dot"></div>
+                <div class="sk-chase-dot"></div>
+                <div class="sk-chase-dot"></div>
+                <div class="sk-chase-dot"></div>
+                </div><br>Please Wait.<br>Validating Payment...</center>`
+        });
+    </script>
+    </body>
+</html>
